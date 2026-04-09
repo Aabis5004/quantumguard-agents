@@ -24,3 +24,10 @@ Built for the **Agentic Economy on Arc Hackathon** (April 20–26, 2026).
 ## Status
 
 🚧 Under active development for hackathon demo.
+
+## Live Deployment
+
+- **Contract on Arc Testnet:** `0x49eD6af7c1C9dc24d4eA9Cb5D80132E46d2b2F2A`
+- **Live website:** https://quantumguard-agents-ii6s.vercel.app
+- **Live API:** https://quantumguard-agents-production.up.railway.app/api/health
+- **Verified source:** https://repo.sourcify.dev/5042002/0x49eD6af7c1C9dc24d4eA9Cb5D80132E46d2b2F2A

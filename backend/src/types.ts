@@ -48,9 +48,18 @@ export interface AIReport {
   quantum_migration_plan: QuantumMigrationPlan;
 }
 
+export interface ResolvedInput {
+  kind: "address" | "url" | "github" | "name";
+  contractAddress: string | null;
+  sourceText: string;
+  confidence: "high" | "medium" | "low";
+  notes: string;
+}
+
 export interface FullReport {
   contractAddress: string;
   scannedAt: string;
+  resolved?: ResolvedInput;
   onchain: OnchainData;
   ai: AIReport;
 }
