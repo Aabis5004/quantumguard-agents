@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables (NEVER commit these!)
+.env
+.env.local
+.env.*.local
+secrets.txt
+*.key
+*.pem
+
+# Build output
+dist/
+build/
+out/
+.next/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Testing
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Solidity
+artifacts/
+cache/
+typechain-types/
