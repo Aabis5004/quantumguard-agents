@@ -7,7 +7,7 @@ import { callGemini } from "../lib/gemini.js";
 import type { OnchainData, AIReport } from "../types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const promptPath = join(__dirname, "../../../prompts/system.md");
+const promptPath = join(__dirname, "../../system.md");
 const SYSTEM_PROMPT = readFileSync(promptPath, "utf-8");
 
 export async function runAdvisor(onchain: OnchainData): Promise<AIReport> {
