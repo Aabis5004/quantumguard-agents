@@ -1,0 +1,77 @@
+// API client for the QuantumGuard backend
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+export interface Suggestion {
+  title: string;
+  category: string;
+  severity: "critical" | "high" | "medium" | "low";
+  problem: string;
+  fix: string;
+  arc_feature_used: string;
+  estimated_impact: string;
+}
+
+export interface QuantumMigrationPlan {
+  urgency: string;
+  exposed_addresses: string[];
+  recommended_action: string;
+  signature_scheme: string;
+  size_tradeoff_note: string;
+}
+
+export interface AIReport {
+  project_summary: string;
+  arc_fit_score: number;
+  quantum_risk_score: number;
+  suggestions: Suggestion[];
+  quantum_migration_plan: QuantumMigrationPlan;
+}
+
+export interface FullReport {
+  contractAddress: string;
+  scannedAt: string;
+  onchain: {
+    address: string;
+    bytecodeSize: number;
+    hasCode: boolean;
+    balance: string;
+    txCount: number;
+    exposedPublicKey: boolean;
+  };
+  ai: AIReport;
+}
+
+export interface ProjectListItem {
+  contractAddress: string;
+  scannedAt: string;
+  arc_fit_score: number;
+  quantum_risk_score: number;
+  summary: string;
+  suggestion_count: number;
+}
+
+export async function scanContract(contractAddress: string): Promise<FullReport> {
+  const res = await fetch(`${API_BASE}/api/scan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contractAddress }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Scan failed (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function listProjects(): Promise<{ count: number; projects: ProjectListItem[] }> {
+  const res = await fetch(`${API_BASE}/api/projects`);
+  if (!res.ok) throw new Error("Failed to load projects");
+  return res.json();
+}
+
+export async function getReport(address: string): Promise<FullReport> {
+  const res = await fetch(`${API_BASE}/api/report/${address}`);
+  if (!res.ok) throw new Error("Report not found");
+  return res.json();
+}
