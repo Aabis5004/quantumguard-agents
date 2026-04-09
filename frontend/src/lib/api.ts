@@ -15,7 +15,7 @@ export interface Suggestion {
 export interface QuantumMigrationPlan {
   urgency: string;
   exposed_addresses: string[];
-  recommended_action: string;
+  recommended_action: string | string[];
   signature_scheme: string;
   size_tradeoff_note: string;
 }
@@ -28,9 +28,18 @@ export interface AIReport {
   quantum_migration_plan: QuantumMigrationPlan;
 }
 
+export interface ResolvedInput {
+  kind: "address" | "url" | "github" | "name";
+  contractAddress: string | null;
+  sourceText: string;
+  confidence: "high" | "medium" | "low";
+  notes: string;
+}
+
 export interface FullReport {
   contractAddress: string;
   scannedAt: string;
+  resolved?: ResolvedInput;
   onchain: {
     address: string;
     bytecodeSize: number;
@@ -51,15 +60,15 @@ export interface ProjectListItem {
   suggestion_count: number;
 }
 
-export async function scanContract(contractAddress: string): Promise<FullReport> {
+export async function scanContract(input: string): Promise<FullReport> {
   const res = await fetch(`${API_BASE}/api/scan`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ contractAddress }),
+    body: JSON.stringify({ input }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Scan failed (${res.status})`);
+    throw new Error(err.error || err.message || `Scan failed (${res.status})`);
   }
   return res.json();
 }
