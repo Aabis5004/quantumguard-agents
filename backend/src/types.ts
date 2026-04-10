@@ -35,7 +35,7 @@ export interface Suggestion {
 export interface QuantumMigrationPlan {
   urgency: "immediate" | "6-months" | "12-months" | "monitor";
   exposed_addresses: string[];
-  recommended_action: string;
+  recommended_action: string | string[];
   signature_scheme: "ML-DSA" | "Falcon";
   size_tradeoff_note: string;
 }
@@ -54,7 +54,12 @@ export interface ResolvedInput {
   sourceText: string;
   confidence: "high" | "medium" | "low";
   notes: string;
+  hint?: string;
 }
+
+// Re-export new agent types so the rest of the codebase has one import path
+export type { CrawledData } from "./agents/crawler.js";
+export type { ProductAnalysis } from "./agents/productAgent.js";
 
 export interface FullReport {
   contractAddress: string;
@@ -62,4 +67,7 @@ export interface FullReport {
   resolved?: ResolvedInput;
   onchain: OnchainData;
   ai: AIReport;
+  // New multi-agent fields (added in sub-part 2)
+  crawled?: import("./agents/crawler.js").CrawledData;
+  product?: import("./agents/productAgent.js").ProductAnalysis;
 }
