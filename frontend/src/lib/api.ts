@@ -34,6 +34,7 @@ export interface ResolvedInput {
   sourceText: string;
   confidence: "high" | "medium" | "low";
   notes: string;
+  hint?: string;
 }
 
 export interface FullReport {
@@ -68,7 +69,13 @@ export async function scanContract(input: string): Promise<FullReport> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || err.message || `Scan failed (${res.status})`);
+    const baseMsg = err.error || err.message || `Scan failed (${res.status})`;
+    const hint = err.resolved?.hint;
+    const notes = err.resolved?.notes;
+    let fullMsg = baseMsg;
+    if (notes) fullMsg += ` — ${notes}`;
+    if (hint) fullMsg += ` 💡 ${hint}`;
+    throw new Error(fullMsg);
   }
   return res.json();
 }
