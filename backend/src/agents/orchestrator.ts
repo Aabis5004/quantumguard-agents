@@ -65,13 +65,7 @@ export async function orchestrate(userInput: string): Promise<OrchestratedReport
     agentsRun.push("tech");
   }
 
-  // Step 5: Strategy synthesis
-  let strategy: UnifiedStrategy | null = null;
-  if (product || tech) {
-    console.log("   [5] Strategy Agent...");
-    strategy = await runStrategyAgent(product, onchain, tech, crawled);
-    agentsRun.push("strategy");
-  }
+  // Strategy step removed — Product Agent now produces the full report
 
   const durationMs = Date.now() - start;
   console.log(`   ✅ Orchestration complete in ${durationMs}ms · agents: ${agentsRun.join(", ")}\n`);
@@ -83,7 +77,7 @@ export async function orchestrate(userInput: string): Promise<OrchestratedReport
     product,
     onchain,
     tech,
-    strategy,
+    strategy: null,
     agentsRun,
     durationMs,
   };

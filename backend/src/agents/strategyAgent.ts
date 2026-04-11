@@ -4,23 +4,15 @@ import type { ProductAnalysis } from "./productAgent.js";
 import type { OnchainData, AIReport } from "../types.js";
 
 export interface UnifiedStrategy {
-  executive_summary: string;
-  top_3_recommendations: Array<{
-    title: string;
-    why: string;
-    how: string;
-    arc_feature: string;
-  }>;
-  // NEW point-wise sections
-  product_improvements: string[];
-  security_action_items: string[];
-  arc_migration_steps: string[];
-  migration_roadmap: string[];
-  estimated_effort: "low" | "medium" | "high";
-  business_impact: string;
+  one_line_verdict: string;
+  arc_score: number;
+  do_this_first: { title: string; steps: string[]; arc_feature: string };
+  arc_improvements: Array<{ title: string; what: string; arc_feature: string }>;
+  security_checklist: string[];
+  effort: "low" | "medium" | "high";
 }
 
-const SYSTEM = `You are a senior Web3 strategy + security consultant. You combine multiple agent reports into a clear, point-wise strategy. You return ONLY strict JSON, no markdown fences. Every bullet must be specific, actionable, and under 25 words.`;
+const SYSTEM = `You are a senior Arc engineer at Circle giving a code-review-style report to a project building on Arc Testnet. Be direct, specific, and Arc-focused. NO generic Web3 advice. Every recommendation must name an actual Arc feature: USDC as native gas, EURC, USYC, sub-second finality, opt-in privacy, ML-DSA/Falcon post-quantum signatures, CCTP V2, Gateway, Circle Wallets, StableFX, Permit2, Multicall3. Return ONLY strict JSON, no markdown fences.`;
 
 export async function runStrategyAgent(
   product: ProductAnalysis | null,
@@ -28,62 +20,60 @@ export async function runStrategyAgent(
   techReport: AIReport | null,
   crawled: CrawledData | null,
 ): Promise<UnifiedStrategy> {
-  const input = `Combine these into ONE unified strategy:
+  const input = `Project context:
 
-PRODUCT: ${JSON.stringify(product, null, 2)}
-ONCHAIN: ${JSON.stringify(onchain, null, 2)}
-TECH: ${JSON.stringify(techReport, null, 2)}
-CRAWLED: ${crawled?.title || ""} | ${crawled?.techHints?.join(",") || ""}
+${product ? `PRODUCT: ${JSON.stringify(product, null, 2)}` : ""}
+${onchain ? `ONCHAIN: ${JSON.stringify(onchain, null, 2)}` : ""}
+${techReport ? `TECH AUDIT: ${JSON.stringify(techReport, null, 2)}` : ""}
+${crawled ? `SCRAPED: ${crawled.title} | tech: ${crawled.techHints.join(",")}` : ""}
 
-Return ONLY this JSON shape (every array MUST have 4-6 specific bullets):
+Return ONLY this JSON. Every bullet must reference a real Arc feature by name. Be concrete enough that a junior dev could open VSCode and start coding.
+
 {
-  "executive_summary": "3-4 sentences: what the project is, biggest opportunity on Arc",
-  "top_3_recommendations": [
-    { "title": "...", "why": "...", "how": "...", "arc_feature": "..." },
-    { "title": "...", "why": "...", "how": "...", "arc_feature": "..." },
-    { "title": "...", "why": "...", "how": "...", "arc_feature": "..." }
+  "one_line_verdict": "One sentence — what this project should do FIRST on Arc",
+  "arc_score": 0-100,
+  "do_this_first": {
+    "title": "Single most impactful Arc change (under 12 words)",
+    "steps": [
+      "Step 1: concrete action (under 20 words)",
+      "Step 2: ...",
+      "Step 3: ...",
+      "Step 4: ..."
+    ],
+    "arc_feature": "Exact Arc feature name"
+  },
+  "arc_improvements": [
+    { "title": "...", "what": "what to change in 1 sentence", "arc_feature": "Arc feature name" },
+    { "title": "...", "what": "...", "arc_feature": "..." },
+    { "title": "...", "what": "...", "arc_feature": "..." },
+    { "title": "...", "what": "...", "arc_feature": "..." }
   ],
-  "product_improvements": [
-    "Specific UX/product bullet (under 25 words)",
-    "Another bullet",
-    "Another bullet",
-    "Another bullet"
+  "security_checklist": [
+    "Arc-specific security check (under 20 words)",
+    "Another Arc check",
+    "Another Arc check",
+    "Another Arc check",
+    "Another Arc check"
   ],
-  "security_action_items": [
-    "Specific security/trust bullet — what to fix or audit",
-    "Another security bullet",
-    "Another security bullet",
-    "Another security bullet"
-  ],
-  "arc_migration_steps": [
-    "Step 1: What to do first to use Arc",
-    "Step 2: ...",
-    "Step 3: ...",
-    "Step 4: ..."
-  ],
-  "migration_roadmap": ["Week 1: ...", "Week 2: ...", "Week 3: ...", "Week 4: ..."],
-  "estimated_effort": "low|medium|high",
-  "business_impact": "one paragraph on business value"
+  "effort": "low|medium|high"
 }`;
 
   try {
     const raw = await callGemini(SYSTEM, input);
     const cleaned = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
     const parsed = JSON.parse(cleaned) as UnifiedStrategy;
-    parsed.product_improvements = parsed.product_improvements || [];
-    parsed.security_action_items = parsed.security_action_items || [];
-    parsed.arc_migration_steps = parsed.arc_migration_steps || [];
+    parsed.arc_improvements = parsed.arc_improvements || [];
+    parsed.security_checklist = parsed.security_checklist || [];
+    if (parsed.do_this_first) parsed.do_this_first.steps = parsed.do_this_first.steps || [];
     return parsed;
   } catch (err: any) {
     return {
-      executive_summary: "Strategy synthesis failed: " + err.message,
-      top_3_recommendations: [],
-      product_improvements: [],
-      security_action_items: [],
-      arc_migration_steps: [],
-      migration_roadmap: [],
-      estimated_effort: "medium",
-      business_impact: "Unable to compute.",
+      one_line_verdict: "Strategy synthesis failed: " + err.message,
+      arc_score: 0,
+      do_this_first: { title: "—", steps: [], arc_feature: "—" },
+      arc_improvements: [],
+      security_checklist: [],
+      effort: "medium",
     };
   }
 }

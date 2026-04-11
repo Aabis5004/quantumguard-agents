@@ -281,116 +281,85 @@ function MiniBadge({ label, score, kind }: { label: string; score: number; kind:
 // ────────────────────────────────────────────────
 function ReportView({ report, onPay }: { report: any; onPay: () => void }) {
   const product = report.product;
-  const strategy = report.strategy;
+  const pages = report.crawled?.pagesCrawled || [];
+
+  if (!product) {
+    return <div className="glass-card p-6 text-center text-gray-400">No analysis available.</div>;
+  }
 
   return (
     <div className="space-y-5">
-      {/* Agent timeline */}
-      <div className="glass-card p-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] uppercase tracking-wider text-gray-500">🎼 {report.durationMs}ms</span>
-          <div className="flex flex-wrap gap-1.5">
+      {/* Agent timeline + pages crawled */}
+      <div className="glass-card p-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-[10px] uppercase tracking-wider text-gray-500">🎼 {report.durationMs}ms</span>
             {report.agentsRun.map((a: string) => (
               <span key={a} className="text-[9px] px-2 py-0.5 rounded bg-arc-accent/10 border border-arc-accent/30 text-arc-accent uppercase">
                 ✓ {a}
               </span>
             ))}
           </div>
+          {pages.length > 0 && (
+            <span className="text-[10px] text-gray-500">📄 {pages.length} page{pages.length === 1 ? "" : "s"} analyzed</span>
+          )}
         </div>
       </div>
 
-      {/* Verdict + Arc Score */}
-      {strategy && (
-        <div className="glass-card p-6 bg-gradient-to-br from-arc-quantum/10 to-arc-accent/5 border-arc-quantum/30">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="flex-1">
-              <div className="text-[10px] text-arc-quantum uppercase mb-1">Arc engineer verdict</div>
-              <h2 className="text-xl font-bold text-white leading-tight">{strategy.one_line_verdict}</h2>
-            </div>
-            <div className="text-center shrink-0">
-              <div className="text-4xl font-bold text-arc-quantum">{strategy.arc_score}</div>
-              <div className="text-[9px] text-gray-500 uppercase">Arc score</div>
-            </div>
-          </div>
-
-          {strategy.do_this_first && strategy.do_this_first.steps?.length > 0 && (
-            <div className="mt-5 pt-4 border-t border-arc-border">
-              <div className="text-[10px] text-arc-accent uppercase mb-2">🚀 Do this first</div>
-              <h3 className="font-bold text-white mb-3">{strategy.do_this_first.title}</h3>
-              <ol className="space-y-1.5">
-                {strategy.do_this_first.steps.map((s: string, i: number) => (
-                  <li key={i} className="text-sm text-gray-300 flex gap-2">
-                    <span className="text-arc-accent font-bold shrink-0">{i + 1}.</span>
-                    <span>{s}</span>
-                  </li>
-                ))}
-              </ol>
-              <div className="text-[10px] text-gray-600 mt-3 uppercase">⚡ {strategy.do_this_first.arc_feature}</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Project ID card (compact) */}
-      {product && (
-        <div className="glass-card p-4 flex items-center gap-4">
+      {/* Project header */}
+      <div className="glass-card p-6 bg-gradient-to-br from-arc-accent/10 to-arc-quantum/5">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <div className="text-[10px] text-gray-500 uppercase mb-0.5">Project</div>
-            <div className="font-bold text-white">{product.project_name}</div>
-            <div className="text-xs text-gray-400">{product.one_liner}</div>
+            <div className="text-[10px] text-gray-500 uppercase mb-1">{product.category}</div>
+            <h2 className="text-3xl font-bold text-white mb-1">{product.project_name}</h2>
+            <p className="text-arc-accent text-sm">{product.one_liner}</p>
           </div>
-          <div className="text-right shrink-0">
-            <div className="text-[9px] text-gray-500 uppercase">{product.category}</div>
-            <div className="text-xl font-bold text-arc-accent">{product.arc_fit_score}<span className="text-xs text-gray-600">/100</span></div>
-            <div className="text-[9px] text-gray-600">Arc fit</div>
-          </div>
-        </div>
-      )}
-
-      {/* Missing Arc features */}
-      {product && product.missing_arc_features?.length > 0 && (
-        <div className="glass-card p-5">
-          <div className="text-[10px] text-arc-accent uppercase mb-3">⚡ Arc features you're missing</div>
-          <div className="space-y-3">
-            {product.missing_arc_features.map((f: any, i: number) => (
-              <div key={i} className="border border-arc-border rounded p-3">
-                <div className="font-bold text-white text-sm mb-1">{f.feature}</div>
-                <div className="text-xs text-gray-400 mb-1"><span className="text-gray-600">Why:</span> {f.why_it_matters}</div>
-                <div className="text-xs text-arc-accent"><span className="text-gray-600">How:</span> {f.how_to_add}</div>
-              </div>
-            ))}
+          <div className="text-center shrink-0">
+            <div className="text-4xl font-bold text-arc-quantum">{product.arc_fit_score}</div>
+            <div className="text-[9px] text-gray-500 uppercase">Arc fit</div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Strategy: Arc improvements */}
-      {strategy && strategy.arc_improvements?.length > 0 && (
-        <div className="glass-card p-5">
-          <div className="text-[10px] text-arc-accent uppercase mb-3">📦 Arc improvements</div>
+      {/* SECTION 1: What they're building */}
+      <div className="glass-card p-6">
+        <div className="text-[10px] text-arc-accent uppercase mb-3 tracking-wider">📦 Section 1 · What they're building</div>
+        <p className="text-gray-300 leading-relaxed">{product.what_they_are_building}</p>
+      </div>
+
+      {/* SECTION 2: What they did great */}
+      {product.what_they_did_great?.length > 0 && (
+        <div className="glass-card p-6 border-arc-success/30">
+          <div className="text-[10px] text-arc-success uppercase mb-3 tracking-wider">✅ Section 2 · What they did great</div>
           <ul className="space-y-2">
-            {strategy.arc_improvements.map((r: any, i: number) => (
-              <li key={i} className="text-sm">
-                <div className="text-white font-medium">{r.title}</div>
-                <div className="text-xs text-gray-400">{r.what}</div>
-                <div className="text-[10px] text-gray-600 uppercase mt-0.5">⚡ {r.arc_feature}</div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Security checklist */}
-      {strategy && strategy.security_checklist?.length > 0 && (
-        <div className="glass-card p-5 border-arc-danger/30">
-          <div className="text-[10px] text-arc-danger uppercase mb-3">🔐 Arc security checklist</div>
-          <ul className="space-y-1.5">
-            {strategy.security_checklist.map((s: string, i: number) => (
-              <li key={i} className="text-xs text-gray-300 flex gap-2">
-                <span className="text-arc-danger">▸</span>
+            {product.what_they_did_great.map((s: string, i: number) => (
+              <li key={i} className="text-sm text-gray-300 flex gap-2">
+                <span className="text-arc-success shrink-0">✓</span>
                 <span>{s}</span>
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* SECTION 3: Improvements + Arc fit */}
+      {product.improvements_for_arc?.length > 0 && (
+        <div className="glass-card p-6 border-arc-quantum/30">
+          <div className="text-[10px] text-arc-quantum uppercase mb-3 tracking-wider">⚡ Section 3 · Improvements for Arc</div>
+          <div className="space-y-3">
+            {product.improvements_for_arc.map((r: any, i: number) => (
+              <div key={i} className="border border-arc-border rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-arc-quantum font-bold text-lg shrink-0">{i + 1}</div>
+                  <div className="flex-1">
+                    <div className="font-bold text-white text-sm mb-1">{r.title}</div>
+                    <div className="text-xs text-gray-400 mb-2">{r.what}</div>
+                    <div className="text-[10px] text-arc-accent uppercase">⚡ {r.arc_feature}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

@@ -1,103 +1,131 @@
-// Crawler Agent — fetches a URL or GitHub README and extracts
-// structured info: title, description, body text, links, addresses,
-// and tech keywords. No LLM calls — pure scraping.
+// Deep Crawler — fetches main page + relevant subpages + GitHub README
+// in parallel, combines into one rich content blob.
 
 export interface CrawledData {
   url: string;
   title: string;
   description: string;
-  bodyText: string;        // first 5000 chars of plain text
+  bodyText: string;          // combined from all pages
+  pagesCrawled: string[];    // URLs we actually fetched
   links: string[];
   foundAddresses: string[];
-  techHints: string[];     // detected tech mentions
+  techHints: string[];
   fetchedAt: string;
-  source: "html" | "github_readme" | "raw_text";
   error?: string;
 }
 
 const TECH_KEYWORDS = [
-  "solidity", "evm", "ethereum", "polygon", "arbitrum", "optimism", "base",
-  "uniswap", "compound", "aave", "erc-20", "erc-721", "erc-1155",
-  "usdc", "usdt", "dai", "stablecoin", "defi", "dex", "amm", "lending",
-  "smart contract", "blockchain", "web3", "metamask", "circle", "arc",
-  "rust", "anchor", "solana", "cosmwasm", "near", "fhe", "zk", "zero-knowledge",
-  "rollup", "layer 2", "l2", "bridge", "swap", "yield", "vault", "staking"
+  "solidity","evm","ethereum","polygon","arbitrum","optimism","base","arc",
+  "uniswap","compound","aave","erc-20","erc-721","stablecoin","defi","dex","amm",
+  "lending","usdc","usdt","eurc","circle","cctp","gateway","wallet","staking",
+  "rust","solana","rollup","l2","bridge","swap","yield","vault","mint","burn",
+  "permit2","multicall","metamask","viem","ethers","wagmi","hardhat","foundry",
+];
+
+// Page paths we prefer to follow if found
+const RELEVANT_PATHS = [
+  /\/about/i, /\/docs/i, /\/whitepaper/i, /\/how/i, /\/product/i,
+  /\/features/i, /\/roadmap/i, /\/team/i, /\/litepaper/i, /\/learn/i,
+  /readme/i,
 ];
 
 export async function crawl(url: string): Promise<CrawledData> {
   try {
     const isGithub = /github\.com/i.test(url);
-    let fetchUrl = url;
-    let source: CrawledData["source"] = "html";
+    const allPages: { url: string; text: string; html: string }[] = [];
 
-    // For GitHub URLs, try the raw README first
+    // 1. Always fetch the main page first
+    const main = await fetchPage(url);
+    if (main) allPages.push({ url, ...main });
+
+    // 2. If GitHub, also fetch the raw README
     if (isGithub) {
       const m = url.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/i);
       if (m) {
         const [, owner, repo] = m;
         const cleanRepo = repo.replace(/\.git$/, "");
-        fetchUrl = `https://raw.githubusercontent.com/${owner}/${cleanRepo}/main/README.md`;
-        source = "github_readme";
+        const readmeUrls = [
+          `https://raw.githubusercontent.com/${owner}/${cleanRepo}/main/README.md`,
+          `https://raw.githubusercontent.com/${owner}/${cleanRepo}/master/README.md`,
+        ];
+        for (const ru of readmeUrls) {
+          const r = await fetchPage(ru);
+          if (r && r.text.length > 100) {
+            allPages.push({ url: ru, ...r });
+            break;
+          }
+        }
       }
     }
 
-    let res = await fetch(fetchUrl, {
-      headers: {
-        "User-Agent": "QuantumGuard-Crawler/1.0 (+https://quantumguard.app)",
-        "Accept": "text/html,text/plain,application/json,*/*",
-      },
-      signal: AbortSignal.timeout(15_000),
-    });
+    // 3. Find relevant subpage links from the main page
+    if (main && !isGithub) {
+      const baseOrigin = new URL(url).origin;
+      const internalLinks = findInternalLinks(main.html, baseOrigin);
+      const relevant = internalLinks
+        .filter((l) => RELEVANT_PATHS.some((p) => p.test(l)))
+        .slice(0, 4); // cap at 4 subpages
 
-    // GitHub master branch fallback
-    if (!res.ok && isGithub && fetchUrl.includes("/main/")) {
-      const masterUrl = fetchUrl.replace("/main/", "/master/");
-      res = await fetch(masterUrl, {
-        headers: { "User-Agent": "QuantumGuard-Crawler/1.0" },
-        signal: AbortSignal.timeout(10_000),
+      // Fetch them in parallel
+      const subPages = await Promise.all(relevant.map(fetchPage));
+      relevant.forEach((u, i) => {
+        const p = subPages[i];
+        if (p && p.text.length > 100) allPages.push({ url: u, ...p });
       });
     }
 
-    // If GitHub readme fails entirely, try the github.com page
-    if (!res.ok && isGithub) {
-      res = await fetch(url, {
-        headers: { "User-Agent": "QuantumGuard-Crawler/1.0" },
-        signal: AbortSignal.timeout(10_000),
-      });
-      source = "html";
+    // 4. Combine everything
+    if (allPages.length === 0) {
+      return emptyResult(url, "no pages fetched");
     }
 
-    if (!res.ok) {
-      return emptyResult(url, `HTTP ${res.status}`);
-    }
-
-    const text = await res.text();
-    return parseContent(url, text, source);
+    return combinePages(url, allPages, isGithub);
   } catch (err: any) {
     return emptyResult(url, err.message || "fetch failed");
   }
 }
 
-function parseContent(url: string, raw: string, source: CrawledData["source"]): CrawledData {
-  // Extract title
-  const titleMatch = raw.match(/<title[^>]*>([^<]+)<\/title>/i);
-  let title = titleMatch ? decodeHtml(titleMatch[1].trim()) : "";
-
-  // For GitHub README, the title is often the first # heading
-  if (source === "github_readme" && !title) {
-    const headingMatch = raw.match(/^#\s+(.+)$/m);
-    if (headingMatch) title = headingMatch[1].trim();
+async function fetchPage(url: string): Promise<{ text: string; html: string } | null> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; QuantumGuard-Crawler/1.0)",
+        "Accept": "text/html,text/plain,application/json,*/*",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const text = stripHtml(html);
+    return { text, html };
+  } catch {
+    return null;
   }
+}
 
-  // Extract meta description
-  const descMatch =
-    raw.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
-    raw.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i) ||
-    raw.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
-  const description = descMatch ? decodeHtml(descMatch[1].trim()) : "";
+function findInternalLinks(html: string, baseOrigin: string): string[] {
+  const matches = html.match(/href=["']([^"']+)["']/gi) || [];
+  const links = new Set<string>();
+  for (const m of matches) {
+    const href = m.replace(/^href=["']/i, "").replace(/["']$/, "");
+    try {
+      let abs: string;
+      if (href.startsWith("http")) {
+        abs = href;
+      } else if (href.startsWith("/")) {
+        abs = baseOrigin + href;
+      } else {
+        continue;
+      }
+      const u = new URL(abs);
+      if (u.origin === baseOrigin) links.add(abs);
+    } catch {}
+  }
+  return Array.from(links);
+}
 
-  // Strip HTML tags & markdown to get plain text
-  const stripped = raw
+function stripHtml(html: string): string {
+  return html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
@@ -107,56 +135,70 @@ function parseContent(url: string, raw: string, source: CrawledData["source"]): 
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
     .replace(/\s+/g, " ")
     .trim();
+}
 
-  const bodyText = stripped.slice(0, 5000);
+function combinePages(rootUrl: string, pages: { url: string; text: string; html: string }[], isGithub: boolean): CrawledData {
+  const main = pages[0];
 
-  // Extract unique addresses
-  const addressMatches = raw.match(/0x[a-fA-F0-9]{40}/g) || [];
+  // Title
+  const titleMatch = main.html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  let title = titleMatch ? titleMatch[1].trim() : "";
+  if (!title && isGithub) {
+    const h = main.html.match(/^#\s+(.+)$/m);
+    if (h) title = h[1].trim();
+  }
+
+  // Description
+  const descMatch =
+    main.html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
+    main.html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i) ||
+    main.html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
+  const description = descMatch ? descMatch[1].trim() : "";
+
+  // Combined body — concatenate page text, labelled, capped at 12k total chars
+  const PER_PAGE_CAP = 3000;
+  const TOTAL_CAP = 12000;
+  let bodyText = "";
+  for (const p of pages) {
+    const slug = new URL(p.url).pathname || "/";
+    const chunk = `\n\n[PAGE: ${slug}]\n${p.text.slice(0, PER_PAGE_CAP)}`;
+    if (bodyText.length + chunk.length > TOTAL_CAP) break;
+    bodyText += chunk;
+  }
+  bodyText = bodyText.trim();
+
+  // Aggregate addresses + links + tech hints across all pages
+  const allHtml = pages.map((p) => p.html).join(" ");
+  const allText = pages.map((p) => p.text).join(" ").toLowerCase();
+
+  const addressMatches = allHtml.match(/0x[a-fA-F0-9]{40}/g) || [];
   const foundAddresses = [...new Set(addressMatches.map((a) => a.toLowerCase()))];
 
-  // Extract unique links (cap to 30)
-  const linkMatches = raw.match(/https?:\/\/[^\s"'<>)]+/g) || [];
-  const links = [...new Set(linkMatches)].slice(0, 30);
+  const linkMatches = allHtml.match(/https?:\/\/[^\s"'<>)]+/g) || [];
+  const links = [...new Set(linkMatches)].slice(0, 50);
 
-  // Detect tech keywords (case-insensitive)
-  const lowerText = stripped.toLowerCase();
-  const techHints = TECH_KEYWORDS.filter((k) => lowerText.includes(k));
+  const techHints = TECH_KEYWORDS.filter((k) => allText.includes(k));
 
   return {
-    url,
+    url: rootUrl,
     title,
     description,
     bodyText,
+    pagesCrawled: pages.map((p) => p.url),
     links,
     foundAddresses,
     techHints,
     fetchedAt: new Date().toISOString(),
-    source,
   };
-}
-
-function decodeHtml(s: string): string {
-  return s
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
 }
 
 function emptyResult(url: string, error: string): CrawledData {
   return {
-    url,
-    title: "",
-    description: "",
-    bodyText: "",
-    links: [],
-    foundAddresses: [],
-    techHints: [],
-    fetchedAt: new Date().toISOString(),
-    source: "html",
-    error,
+    url, title: "", description: "", bodyText: "",
+    pagesCrawled: [], links: [], foundAddresses: [], techHints: [],
+    fetchedAt: new Date().toISOString(), error,
   };
 }

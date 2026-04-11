@@ -4,31 +4,21 @@ export interface ProductAnalysis {
   project_name: string;
   one_liner: string;
   category: string;
+  what_they_are_building: string;
+  what_they_did_great: string[];
+  improvements_for_arc: Array<{ title: string; what: string; arc_feature: string }>;
   arc_fit_score: number;
-  arc_fit_reason: string;
-  missing_arc_features: Array<{ feature: string; why_it_matters: string; how_to_add: string }>;
-  arc_improvements: string[];
-  security_gotchas_on_arc: string[];
   notes: string;
-}
-
-export interface UnifiedStrategy {
-  one_line_verdict: string;
-  arc_score: number;
-  do_this_first: { title: string; steps: string[]; arc_feature: string };
-  arc_improvements: Array<{ title: string; what: string; arc_feature: string }>;
-  security_checklist: string[];
-  effort: "low" | "medium" | "high";
 }
 
 export interface OrchestratedReport {
   input: string;
   resolved: any;
-  crawled: any;
+  crawled: { pagesCrawled?: string[] } | null;
   product: ProductAnalysis | null;
   onchain: any;
   tech: any;
-  strategy: UnifiedStrategy | null;
+  strategy: any;
   agentsRun: string[];
   durationMs: number;
 }
