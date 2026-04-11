@@ -282,173 +282,123 @@ function MiniBadge({ label, score, kind }: { label: string; score: number; kind:
 function ReportView({ report, onPay }: { report: any; onPay: () => void }) {
   const product = report.product;
   const strategy = report.strategy;
-  const tech = report.tech;
-  const onchain = report.onchain;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Agent timeline */}
-      <div className="glass-card p-4">
-        <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">
-          🎼 Multi-agent orchestration · {report.durationMs}ms
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {report.agentsRun.map((a: string) => (
-            <span key={a} className="text-[10px] px-2 py-1 rounded bg-arc-accent/10 border border-arc-accent/30 text-arc-accent uppercase">
-              ✓ {a}
-            </span>
-          ))}
+      <div className="glass-card p-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">🎼 {report.durationMs}ms</span>
+          <div className="flex flex-wrap gap-1.5">
+            {report.agentsRun.map((a: string) => (
+              <span key={a} className="text-[9px] px-2 py-0.5 rounded bg-arc-accent/10 border border-arc-accent/30 text-arc-accent uppercase">
+                ✓ {a}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Product card */}
+      {/* Verdict + Arc Score */}
+      {strategy && (
+        <div className="glass-card p-6 bg-gradient-to-br from-arc-quantum/10 to-arc-accent/5 border-arc-quantum/30">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex-1">
+              <div className="text-[10px] text-arc-quantum uppercase mb-1">Arc engineer verdict</div>
+              <h2 className="text-xl font-bold text-white leading-tight">{strategy.one_line_verdict}</h2>
+            </div>
+            <div className="text-center shrink-0">
+              <div className="text-4xl font-bold text-arc-quantum">{strategy.arc_score}</div>
+              <div className="text-[9px] text-gray-500 uppercase">Arc score</div>
+            </div>
+          </div>
+
+          {strategy.do_this_first && strategy.do_this_first.steps?.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-arc-border">
+              <div className="text-[10px] text-arc-accent uppercase mb-2">🚀 Do this first</div>
+              <h3 className="font-bold text-white mb-3">{strategy.do_this_first.title}</h3>
+              <ol className="space-y-1.5">
+                {strategy.do_this_first.steps.map((s: string, i: number) => (
+                  <li key={i} className="text-sm text-gray-300 flex gap-2">
+                    <span className="text-arc-accent font-bold shrink-0">{i + 1}.</span>
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ol>
+              <div className="text-[10px] text-gray-600 mt-3 uppercase">⚡ {strategy.do_this_first.arc_feature}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Project ID card (compact) */}
       {product && (
-        <div className="glass-card p-6">
-          <div className="text-[10px] text-gray-500 uppercase mb-2">🧠 Product Agent</div>
-          <h2 className="text-2xl font-bold mb-1">{product.project_name}</h2>
-          <p className="text-arc-accent text-sm mb-4">{product.one_liner}</p>
-          <p className="text-gray-300 text-sm mb-3">{product.what_it_does}</p>
-          <div className="grid md:grid-cols-2 gap-3 text-xs">
-            <div><span className="text-gray-500">Category:</span> <span className="text-white uppercase">{product.category}</span></div>
-            <div><span className="text-gray-500">Arc fit:</span> <span className="text-arc-quantum font-bold">{product.arc_fit_score}/100</span></div>
-            <div><span className="text-gray-500">Target:</span> <span className="text-gray-300">{product.target_users}</span></div>
-            <div><span className="text-gray-500">Chains:</span> <span className="text-gray-300">{product.detected_chains?.join(", ") || "—"}</span></div>
+        <div className="glass-card p-4 flex items-center gap-4">
+          <div className="flex-1">
+            <div className="text-[10px] text-gray-500 uppercase mb-0.5">Project</div>
+            <div className="font-bold text-white">{product.project_name}</div>
+            <div className="text-xs text-gray-400">{product.one_liner}</div>
           </div>
-          <p className="text-xs text-gray-400 mt-3 italic">{product.arc_fit_explanation}</p>
-            {product.security_concerns?.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-arc-border">
-              <div className="text-[10px] text-arc-danger uppercase mb-2">⚠️ Security concerns</div>
-              <ul className="text-xs text-gray-300 space-y-1">
-                {product.security_concerns.map((s: string, i: number) => (
-                  <li key={i}>• {s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {product.what_they_should_focus_on?.length > 0 && (
-            <div className="mt-3">
-              <div className="text-[10px] text-arc-accent uppercase mb-2">🎯 Focus areas</div>
-              <ul className="text-xs text-gray-300 space-y-1">
-                {product.what_they_should_focus_on.map((s: string, i: number) => (
-                  <li key={i}>• {s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {product.arc_specific_improvements?.length > 0 && (
-            <div className="mt-3">
-              <div className="text-[10px] text-arc-quantum uppercase mb-2">⚡ Arc-specific improvements</div>
-              <ul className="text-xs text-gray-300 space-y-1">
-                {product.arc_specific_improvements.map((s: string, i: number) => (
-                  <li key={i}>• {s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <div className="text-right shrink-0">
+            <div className="text-[9px] text-gray-500 uppercase">{product.category}</div>
+            <div className="text-xl font-bold text-arc-accent">{product.arc_fit_score}<span className="text-xs text-gray-600">/100</span></div>
+            <div className="text-[9px] text-gray-600">Arc fit</div>
+          </div>
         </div>
       )}
 
-      {/* Strategy: top 3 recommendations */}
-      {strategy && strategy.top_3_recommendations?.length > 0 && (
-        <div className="glass-card p-6 border-arc-quantum/40 bg-arc-quantum/5">
-          <div className="text-[10px] text-arc-quantum uppercase mb-3">🎯 Strategy Agent · Top 3 actions</div>
-          <p className="text-gray-300 text-sm mb-5 italic">{strategy.executive_summary}</p>
+      {/* Missing Arc features */}
+      {product && product.missing_arc_features?.length > 0 && (
+        <div className="glass-card p-5">
+          <div className="text-[10px] text-arc-accent uppercase mb-3">⚡ Arc features you're missing</div>
           <div className="space-y-3">
-            {strategy.top_3_recommendations.map((r: any, i: number) => (
-              <div key={i} className="border border-arc-border rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <div className="text-arc-accent font-bold text-lg">{i + 1}</div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-white mb-1">{r.title}</h4>
-                    <p className="text-xs text-gray-400 mb-1"><span className="text-gray-600">Why:</span> {r.why}</p>
-                    <p className="text-xs text-arc-accent mb-1"><span className="text-gray-600">How:</span> {r.how}</p>
-                    <p className="text-[10px] text-gray-600 uppercase">{r.arc_feature}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          {strategy.migration_roadmap?.length > 0 && (
-            <div className="mt-5 pt-4 border-t border-arc-border">
-              <div className="text-[10px] text-gray-500 uppercase mb-2">📅 Migration roadmap</div>
-              <ol className="text-xs text-gray-300 space-y-1">
-               {strategy.security_action_items?.length > 0 && (
-            <div className="mt-5 pt-4 border-t border-arc-border">
-              <div className="text-[10px] text-arc-danger uppercase mb-2">🔐 Security action items</div>
-              <ul className="text-xs text-gray-300 space-y-1">
-                {strategy.security_action_items.map((s: string, i: number) => (
-                  <li key={i}>• {s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {strategy.product_improvements?.length > 0 && (
-            <div className="mt-4">
-              <div className="text-[10px] text-arc-accent uppercase mb-2">📦 Product improvements</div>
-              <ul className="text-xs text-gray-300 space-y-1">
-                {strategy.product_improvements.map((s: string, i: number) => (
-                  <li key={i}>• {s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {strategy.arc_migration_steps?.length > 0 && (
-            <div className="mt-4">
-              <div className="text-[10px] text-arc-quantum uppercase mb-2">⚡ Arc migration steps</div>
-              <ol className="text-xs text-gray-300 space-y-1 list-decimal list-inside">
-                {strategy.arc_migration_steps.map((s: string, i: number) => (
-                  <li key={i}>{s}</li>
-                ))}
-              </ol>
-            </div>
-          )}
-                {strategy.migration_roadmap.map((step: string, i: number) => (
-                  <li key={i}>• {step}</li>
-                ))}
-              </ol>
-            </div>
-          )}
-          <div className="mt-3 text-[10px] text-gray-500">
-            Effort: <span className="text-arc-warning uppercase">{strategy.estimated_effort}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Tech report (if contract was analyzed) */}
-      {tech && tech.suggestions?.length > 0 && (
-        <div className="glass-card p-6">
-          <div className="text-[10px] text-gray-500 uppercase mb-3">⛓️ Tech Agent · {tech.suggestions.length} suggestions</div>
-          <p className="text-sm text-gray-300 mb-4">{tech.project_summary}</p>
-          <div className="space-y-2">
-            {tech.suggestions.slice(0, 5).map((s: any, i: number) => (
-              <div key={i} className="text-xs border border-arc-border rounded p-3">
-                <div className="font-bold text-white">{s.title}</div>
-                <div className="text-arc-accent">→ {s.fix}</div>
+            {product.missing_arc_features.map((f: any, i: number) => (
+              <div key={i} className="border border-arc-border rounded p-3">
+                <div className="font-bold text-white text-sm mb-1">{f.feature}</div>
+                <div className="text-xs text-gray-400 mb-1"><span className="text-gray-600">Why:</span> {f.why_it_matters}</div>
+                <div className="text-xs text-arc-accent"><span className="text-gray-600">How:</span> {f.how_to_add}</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* On-chain card */}
-      {onchain && (
-        <div className="glass-card p-4 text-xs text-gray-400">
-          <div className="text-[10px] uppercase text-gray-500 mb-2">📡 On-chain footprint</div>
-          <div className="font-mono break-all text-[10px] mb-2">{onchain.address}</div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>Bytecode: {onchain.bytecodeSize} bytes</div>
-            <div>Tx count: {onchain.txCount}</div>
-            <div>Balance: {onchain.balance}</div>
-            <div>Quantum exposed: {onchain.exposedPublicKey ? "⚠️ yes" : "✅ no"}</div>
-          </div>
+      {/* Strategy: Arc improvements */}
+      {strategy && strategy.arc_improvements?.length > 0 && (
+        <div className="glass-card p-5">
+          <div className="text-[10px] text-arc-accent uppercase mb-3">📦 Arc improvements</div>
+          <ul className="space-y-2">
+            {strategy.arc_improvements.map((r: any, i: number) => (
+              <li key={i} className="text-sm">
+                <div className="text-white font-medium">{r.title}</div>
+                <div className="text-xs text-gray-400">{r.what}</div>
+                <div className="text-[10px] text-gray-600 uppercase mt-0.5">⚡ {r.arc_feature}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Security checklist */}
+      {strategy && strategy.security_checklist?.length > 0 && (
+        <div className="glass-card p-5 border-arc-danger/30">
+          <div className="text-[10px] text-arc-danger uppercase mb-3">🔐 Arc security checklist</div>
+          <ul className="space-y-1.5">
+            {strategy.security_checklist.map((s: string, i: number) => (
+              <li key={i} className="text-xs text-gray-300 flex gap-2">
+                <span className="text-arc-danger">▸</span>
+                <span>{s}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
       {/* Pay CTA */}
       <div className="glass-card p-6 text-center bg-gradient-to-br from-arc-quantum/10 to-arc-accent/10">
-        <h3 className="font-bold text-lg mb-2">Want code-level deep audit?</h3>
-        <p className="text-sm text-gray-400 mb-4">Unlock vision agent (reads screenshots), security findings, custom migration script — 0.10 USDC.</p>
-        <button onClick={onPay} className="glow-button">💳 Pay with AgentCard</button>
+        <h3 className="font-bold text-lg mb-1">Want a deeper Arc audit?</h3>
+        <p className="text-xs text-gray-400 mb-4">Pay 0.10 USDC on Arc Testnet to unlock code-level review.</p>
+        <button onClick={onPay} className="glow-button">💳 Pay with AgentCard · 0.10 USDC</button>
       </div>
     </div>
   );
