@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { scanContract, listProjects, type FullReport, type ProjectListItem } from "./lib/api";
+import { scanContract, listProjects, type OrchestratedReport, type ProjectListItem } from "./lib/api";
 
 const RAILWAY_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const EXAMPLE_INPUTS = [
@@ -12,7 +12,7 @@ const EXAMPLE_INPUTS = [
 export default function App() {
   const [input, setInput] = useState("");
   const [scanning, setScanning] = useState(false);
-  const [report, setReport] = useState<FullReport | null>(null);
+  const [report, setReport] = useState<OrchestratedReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [showCard, setShowCard] = useState(false);
@@ -272,39 +272,6 @@ function MiniBadge({ label, score, kind }: { label: string; score: number; kind:
   return (
     <div className={`text-[9px] font-bold border rounded px-1.5 py-0.5 ${color}`}>
       {label} {score}
-    </div>
-  );
-}
-
-// ────────────────────────────────────────────────
-// Quantum risk gauge (circular)
-// ────────────────────────────────────────────────
-function RiskGauge({ score, kind }: { score: number; kind: "fit" | "risk" }) {
-  const radius = 36;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
-  const isHigh = score >= 70;
-  const isMid = score >= 40 && score < 70;
-  const color =
-    kind === "risk"
-      ? isHigh ? "#ef4444" : isMid ? "#f59e0b" : "#10b981"
-      : isHigh ? "#10b981" : isMid ? "#f59e0b" : "#ef4444";
-
-  return (
-    <div className="relative w-24 h-24">
-      <svg className="w-24 h-24 -rotate-90" viewBox="0 0 80 80">
-        <circle cx="40" cy="40" r={radius} fill="none" stroke="#26262e" strokeWidth="6" />
-        <circle
-          cx="40" cy="40" r={radius}
-          fill="none" stroke={color} strokeWidth="6" strokeLinecap="round"
-          strokeDasharray={circumference} strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 1s ease-out" }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-2xl font-bold" style={{ color }}>{score}</div>
-        <div className="text-[8px] text-gray-500 uppercase">/ 100</div>
-      </div>
     </div>
   );
 }
