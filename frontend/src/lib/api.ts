@@ -18,11 +18,18 @@ export interface ProductAnalysis {
   project_name: string; one_liner: string; what_it_does: string;
   target_users: string; value_prop: string; category: string;
   detected_chains: string[]; arc_fit_score: number;
-  arc_fit_explanation: string; notes: string;
+  arc_fit_explanation: string;
+  what_they_should_focus_on: string[];
+  security_concerns: string[];
+  arc_specific_improvements: string[];
+  notes: string;
 }
 export interface UnifiedStrategy {
   executive_summary: string;
   top_3_recommendations: Array<{title:string; why:string; how:string; arc_feature:string;}>;
+  product_improvements: string[];
+  security_action_items: string[];
+  arc_migration_steps: string[];
   migration_roadmap: string[];
   estimated_effort: "low"|"medium"|"high";
   business_impact: string;

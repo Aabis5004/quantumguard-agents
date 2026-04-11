@@ -1,6 +1,3 @@
-// Product Agent — reads crawled website content and produces
-// a structured product analysis using Gemini.
-
 import { callGemini } from "../lib/gemini.js";
 import type { CrawledData } from "./crawler.js";
 
@@ -14,60 +11,79 @@ export interface ProductAnalysis {
   detected_chains: string[];
   arc_fit_score: number;
   arc_fit_explanation: string;
+  // NEW point-wise fields
+  what_they_should_focus_on: string[];
+  security_concerns: string[];
+  arc_specific_improvements: string[];
   notes: string;
 }
 
-const SYSTEM_PROMPT = `You are a senior Web3 product analyst. You read website content and extract a clean, factual product summary. You return ONLY strict JSON with no markdown fences, no commentary, and no preamble.`;
+const SYSTEM_PROMPT = `You are a senior Web3 product analyst AND security reviewer. You read website content and produce a clear, point-wise product + security analysis. You return ONLY strict JSON with no markdown fences.`;
 
 export async function runProductAgent(crawled: CrawledData): Promise<ProductAnalysis> {
   if (!crawled.bodyText && !crawled.title && !crawled.description) {
     return defaultEmpty(crawled.error);
   }
 
-  const userInput = `Here is the scraped content from a project's website or GitHub README:
+  const userInput = `Analyze this project:
 
 URL: ${crawled.url}
-Source: ${crawled.source}
 Title: ${crawled.title || "(none)"}
-Meta description: ${crawled.description || "(none)"}
-Detected tech mentions: ${crawled.techHints.join(", ") || "none"}
-Found contract addresses: ${crawled.foundAddresses.length}
-Number of outbound links: ${crawled.links.length}
+Description: ${crawled.description || "(none)"}
+Tech mentions: ${crawled.techHints.join(", ") || "none"}
+Addresses found: ${crawled.foundAddresses.length}
 
-Body text (first 5000 chars):
+Body text:
 ${crawled.bodyText || "(empty)"}
 
-Analyze this and return ONLY a JSON object with this exact shape:
+Return ONLY this JSON shape (every field required, arrays must have 3-5 items each):
 {
   "project_name": "string",
-  "one_liner": "string under 15 words describing what it is",
-  "what_it_does": "2-3 sentences explaining the product",
-  "target_users": "who would use this",
-  "value_prop": "main value proposition",
-  "category": "defi | payments | infra | wallet | tooling | social | gaming | rwa | other",
-  "detected_chains": ["ethereum", "polygon", ...],
+  "one_liner": "under 15 words",
+  "what_it_does": "2-3 sentences",
+  "target_users": "who uses this",
+  "value_prop": "main value",
+  "category": "defi|payments|infra|wallet|tooling|social|gaming|rwa|other",
+  "detected_chains": ["chain1", "chain2"],
   "arc_fit_score": 0-100,
-  "arc_fit_explanation": "2-3 sentences on whether this project would benefit from migrating to or building on Arc (Circle's stablecoin L1 with USDC as native gas, sub-second finality, opt-in privacy, post-quantum signatures, and full Circle platform integration including CCTP, Gateway, USDC, EURC, USYC). Be specific about which Arc features fit this project.",
-  "notes": "any caveats, missing data, or assumptions"
+  "arc_fit_explanation": "2-3 sentences on Arc benefit",
+  "what_they_should_focus_on": [
+    "Short bullet (under 20 words) about a product/UX improvement",
+    "Another bullet",
+    "Another bullet"
+  ],
+  "security_concerns": [
+    "Short bullet about a potential security/trust risk based on what you see",
+    "Another security bullet",
+    "Another security bullet"
+  ],
+  "arc_specific_improvements": [
+    "Short bullet: how Arc feature X would specifically help THIS project",
+    "Another Arc-specific bullet",
+    "Another Arc-specific bullet"
+  ],
+  "notes": "any caveats"
 }
 
 Scoring guidance for arc_fit_score:
-- 80-100: stablecoin payments, FX, lending, capital markets, RWA, treasury, B2B finance — Arc was built for these
-- 60-79: general DeFi (DEXs, AMMs, yield), wallets, dev tooling — strong fit
-- 40-59: NFTs with payment flows, gaming with on-chain economy, social with payments
-- 20-39: pure NFTs, gaming without payments, infra unrelated to money
-- 0-19: not a Web3 project at all, or irrelevant to stablecoin finance
+- 80-100: stablecoin payments, FX, lending, capital markets, RWA, B2B finance
+- 60-79: general DeFi, wallets, dev tooling
+- 40-59: NFTs with payments, gaming with on-chain economy
+- 20-39: pure NFTs, gaming, infra unrelated to money
+- 0-19: not Web3 / irrelevant
 
-Output ONLY the JSON object. No markdown fences. No commentary.`;
+For security_concerns: even without contract code, infer risks from product type (e.g., "Payment platform handling user funds — critical to verify smart contract audit status before mainnet launch" or "No mention of multi-sig treasury — single-key risk").
+
+Output ONLY the JSON. No markdown fences.`;
 
   try {
     const raw = await callGemini(SYSTEM_PROMPT, userInput);
-    const cleaned = raw
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
+    const cleaned = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
     const parsed = JSON.parse(cleaned) as ProductAnalysis;
+    // Ensure arrays exist even if model omitted them
+    parsed.what_they_should_focus_on = parsed.what_they_should_focus_on || [];
+    parsed.security_concerns = parsed.security_concerns || [];
+    parsed.arc_specific_improvements = parsed.arc_specific_improvements || [];
     return parsed;
   } catch (err: any) {
     console.error("ProductAgent failed:", err.message);
@@ -85,7 +101,10 @@ function defaultEmpty(reason?: string): ProductAnalysis {
     category: "other",
     detected_chains: [],
     arc_fit_score: 0,
-    arc_fit_explanation: "Insufficient crawled data to analyze.",
+    arc_fit_explanation: "Insufficient data.",
+    what_they_should_focus_on: [],
+    security_concerns: [],
+    arc_specific_improvements: [],
     notes: reason || "Crawler returned no usable content.",
   };
 }

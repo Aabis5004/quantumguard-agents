@@ -315,6 +315,36 @@ function ReportView({ report, onPay }: { report: any; onPay: () => void }) {
             <div><span className="text-gray-500">Chains:</span> <span className="text-gray-300">{product.detected_chains?.join(", ") || "—"}</span></div>
           </div>
           <p className="text-xs text-gray-400 mt-3 italic">{product.arc_fit_explanation}</p>
+            {product.security_concerns?.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-arc-border">
+              <div className="text-[10px] text-arc-danger uppercase mb-2">⚠️ Security concerns</div>
+              <ul className="text-xs text-gray-300 space-y-1">
+                {product.security_concerns.map((s: string, i: number) => (
+                  <li key={i}>• {s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {product.what_they_should_focus_on?.length > 0 && (
+            <div className="mt-3">
+              <div className="text-[10px] text-arc-accent uppercase mb-2">🎯 Focus areas</div>
+              <ul className="text-xs text-gray-300 space-y-1">
+                {product.what_they_should_focus_on.map((s: string, i: number) => (
+                  <li key={i}>• {s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {product.arc_specific_improvements?.length > 0 && (
+            <div className="mt-3">
+              <div className="text-[10px] text-arc-quantum uppercase mb-2">⚡ Arc-specific improvements</div>
+              <ul className="text-xs text-gray-300 space-y-1">
+                {product.arc_specific_improvements.map((s: string, i: number) => (
+                  <li key={i}>• {s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
@@ -342,6 +372,36 @@ function ReportView({ report, onPay }: { report: any; onPay: () => void }) {
             <div className="mt-5 pt-4 border-t border-arc-border">
               <div className="text-[10px] text-gray-500 uppercase mb-2">📅 Migration roadmap</div>
               <ol className="text-xs text-gray-300 space-y-1">
+               {strategy.security_action_items?.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-arc-border">
+              <div className="text-[10px] text-arc-danger uppercase mb-2">🔐 Security action items</div>
+              <ul className="text-xs text-gray-300 space-y-1">
+                {strategy.security_action_items.map((s: string, i: number) => (
+                  <li key={i}>• {s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {strategy.product_improvements?.length > 0 && (
+            <div className="mt-4">
+              <div className="text-[10px] text-arc-accent uppercase mb-2">📦 Product improvements</div>
+              <ul className="text-xs text-gray-300 space-y-1">
+                {strategy.product_improvements.map((s: string, i: number) => (
+                  <li key={i}>• {s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {strategy.arc_migration_steps?.length > 0 && (
+            <div className="mt-4">
+              <div className="text-[10px] text-arc-quantum uppercase mb-2">⚡ Arc migration steps</div>
+              <ol className="text-xs text-gray-300 space-y-1 list-decimal list-inside">
+                {strategy.arc_migration_steps.map((s: string, i: number) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ol>
+            </div>
+          )}
                 {strategy.migration_roadmap.map((step: string, i: number) => (
                   <li key={i}>• {step}</li>
                 ))}
