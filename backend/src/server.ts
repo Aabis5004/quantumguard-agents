@@ -11,6 +11,7 @@ import "dotenv/config";
 import { fetchOnchainData } from "./lib/arc.js";
 import { runAdvisor } from "./agents/advisor.js";
 import { resolveInput } from "./agents/resolver.js";
+import { orchestrate } from "./agents/orchestrator.js";
 import { saveReport, getReport, listReports } from "./lib/storage.js";
 import type { FullReport } from "./types.js";
 
@@ -145,4 +146,24 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log("│   GET  /api/report/:addr                            │");
   console.log("│   POST /api/scan { input }                          │");
   console.log("└─────────────────────────────────────────────────────┘\n");
+});
+
+// ─────────────────────────────────────────────
+// Deep scan — runs the full multi-agent orchestrator
+// ─────────────────────────────────────────────
+app.post("/api/scan-deep", async (req, res) => {
+  const { input, contractAddress } = req.body;
+  const userInput = input || contractAddress;
+
+  if (!userInput || typeof userInput !== "string") {
+    return res.status(400).json({ error: "Missing 'input'." });
+  }
+
+  try {
+    const report = await orchestrate(userInput);
+    res.json(report);
+  } catch (err: any) {
+    console.error("Deep scan failed:", err.message);
+    res.status(500).json({ error: "Deep scan failed", message: err.message });
+  }
 });
