@@ -312,134 +312,116 @@ function RiskGauge({ score, kind }: { score: number; kind: "fit" | "risk" }) {
 // ────────────────────────────────────────────────
 // Report view
 // ────────────────────────────────────────────────
-function ReportView({ report, onPay }: { report: FullReport; onPay: () => void }) {
-  const ai = report.ai;
-  const sevColor: Record<string, string> = {
-    critical: "bg-arc-danger/20 text-arc-danger border-arc-danger/50",
-    high: "bg-arc-warning/20 text-arc-warning border-arc-warning/50",
-    medium: "bg-arc-accent/20 text-arc-accent border-arc-accent/50",
-    low: "bg-gray-500/20 text-gray-400 border-gray-500/50",
-  };
-  const catIcon: Record<string, string> = {
-    quantum: "🛡️", "arc-native": "⚡", stablecoin: "💵",
-    agent: "🤖", privacy: "🕶️", gas: "⛽", devx: "🛠️",
-  };
-
-  const action = Array.isArray(ai.quantum_migration_plan.recommended_action)
-    ? ai.quantum_migration_plan.recommended_action
-    : [ai.quantum_migration_plan.recommended_action];
+function ReportView({ report, onPay }: { report: any; onPay: () => void }) {
+  const product = report.product;
+  const strategy = report.strategy;
+  const tech = report.tech;
+  const onchain = report.onchain;
 
   return (
     <div className="space-y-6">
-      {/* Resolver chip */}
-      {report.resolved && (
-        <div className="text-xs text-gray-500 flex items-center gap-2">
-          <span className="text-arc-accent">●</span>
-          Resolved via <span className="text-arc-accent uppercase">{report.resolved.kind}</span>
-          {report.resolved.confidence === "high" && <span className="text-arc-success">· high confidence</span>}
-          {report.resolved.confidence === "medium" && <span className="text-arc-warning">· medium confidence</span>}
+      {/* Agent timeline */}
+      <div className="glass-card p-4">
+        <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-2">
+          🎼 Multi-agent orchestration · {report.durationMs}ms
         </div>
-      )}
-
-      {/* Header card */}
-      <div className="glass-card p-6">
-        <div className="flex flex-col md:flex-row md:items-start gap-6">
-          <div className="flex-1">
-            <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Contract</div>
-            <div className="font-mono text-sm break-all mb-3">{report.contractAddress}</div>
-            <div className="flex flex-wrap gap-3 text-[10px] mb-4">
-              <a href={`https://testnet.arcscan.app/address/${report.contractAddress}`} target="_blank" rel="noreferrer" className="ghost-button !py-1 !px-3">
-                ↗ Arcscan
-              </a>
-              <a href={`https://repo.sourcify.dev/5042002/${report.contractAddress}`} target="_blank" rel="noreferrer" className="ghost-button !py-1 !px-3">
-                ↗ Sourcify
-              </a>
-            </div>
-            <p className="text-gray-300 text-sm leading-relaxed">{ai.project_summary}</p>
-          </div>
-          <div className="flex gap-6 justify-center">
-            <div className="text-center">
-              <RiskGauge score={ai.arc_fit_score} kind="fit" />
-              <div className="text-[10px] text-gray-500 uppercase mt-1">Arc fit</div>
-            </div>
-            <div className="text-center">
-              <RiskGauge score={ai.quantum_risk_score} kind="risk" />
-              <div className="text-[10px] text-gray-500 uppercase mt-1">Quantum risk</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quantum migration plan */}
-      <div className="glass-card p-6 border-arc-quantum/40 bg-arc-quantum/5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="text-3xl">🛡️</div>
-          <div className="flex-1">
-            <h3 className="font-bold text-arc-quantum">Quantum Migration Plan</h3>
-            <div className="text-[10px] text-gray-500 uppercase">Harvest-now-decrypt-later defense</div>
-          </div>
-          <span className="text-[10px] px-2 py-1 rounded bg-arc-quantum/20 text-arc-quantum uppercase font-bold">
-            {ai.quantum_migration_plan.urgency}
-          </span>
-        </div>
-        <div className="grid md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <div className="text-[10px] text-gray-500 uppercase mb-1">Recommended scheme</div>
-            <div className="text-white font-bold text-lg">{ai.quantum_migration_plan.signature_scheme}</div>
-            <div className="text-[10px] text-gray-500 italic mt-1">{ai.quantum_migration_plan.size_tradeoff_note}</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-gray-500 uppercase mb-1">Action plan</div>
-            <ol className="text-xs text-gray-300 space-y-1 list-decimal list-inside">
-              {action.map((a, i) => <li key={i}>{a}</li>)}
-            </ol>
-          </div>
-        </div>
-      </div>
-
-      {/* Suggestions */}
-      <div>
-        <h3 className="text-sm uppercase tracking-wider text-gray-400 mb-3">
-          {ai.suggestions.length} AI Suggestions
-        </h3>
-        <div className="space-y-3">
-          {ai.suggestions.map((s, i) => (
-            <div key={i} className="glass-card p-5 hover:border-arc-accent/40 transition">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="text-2xl">{catIcon[s.category] || "💡"}</div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-[9px] uppercase px-2 py-0.5 rounded border font-bold ${sevColor[s.severity] || sevColor.low}`}>
-                      {s.severity}
-                    </span>
-                    <span className="text-[10px] text-gray-500 uppercase">{s.category}</span>
-                  </div>
-                  <h4 className="font-semibold">{s.title}</h4>
-                </div>
-              </div>
-              <p className="text-sm text-gray-400 mb-2 leading-relaxed">{s.problem}</p>
-              <p className="text-sm text-arc-accent leading-relaxed">→ {s.fix}</p>
-              <div className="flex items-center justify-between mt-3 text-[10px]">
-                <span className="text-gray-600 italic">{s.estimated_impact}</span>
-                <span className="text-gray-700 uppercase font-mono">{s.arc_feature_used}</span>
-              </div>
-            </div>
+        <div className="flex flex-wrap gap-2">
+          {report.agentsRun.map((a: string) => (
+            <span key={a} className="text-[10px] px-2 py-1 rounded bg-arc-accent/10 border border-arc-accent/30 text-arc-accent uppercase">
+              ✓ {a}
+            </span>
           ))}
         </div>
       </div>
 
+      {/* Product card */}
+      {product && (
+        <div className="glass-card p-6">
+          <div className="text-[10px] text-gray-500 uppercase mb-2">🧠 Product Agent</div>
+          <h2 className="text-2xl font-bold mb-1">{product.project_name}</h2>
+          <p className="text-arc-accent text-sm mb-4">{product.one_liner}</p>
+          <p className="text-gray-300 text-sm mb-3">{product.what_it_does}</p>
+          <div className="grid md:grid-cols-2 gap-3 text-xs">
+            <div><span className="text-gray-500">Category:</span> <span className="text-white uppercase">{product.category}</span></div>
+            <div><span className="text-gray-500">Arc fit:</span> <span className="text-arc-quantum font-bold">{product.arc_fit_score}/100</span></div>
+            <div><span className="text-gray-500">Target:</span> <span className="text-gray-300">{product.target_users}</span></div>
+            <div><span className="text-gray-500">Chains:</span> <span className="text-gray-300">{product.detected_chains?.join(", ") || "—"}</span></div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3 italic">{product.arc_fit_explanation}</p>
+        </div>
+      )}
+
+      {/* Strategy: top 3 recommendations */}
+      {strategy && strategy.top_3_recommendations?.length > 0 && (
+        <div className="glass-card p-6 border-arc-quantum/40 bg-arc-quantum/5">
+          <div className="text-[10px] text-arc-quantum uppercase mb-3">🎯 Strategy Agent · Top 3 actions</div>
+          <p className="text-gray-300 text-sm mb-5 italic">{strategy.executive_summary}</p>
+          <div className="space-y-3">
+            {strategy.top_3_recommendations.map((r: any, i: number) => (
+              <div key={i} className="border border-arc-border rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-arc-accent font-bold text-lg">{i + 1}</div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-white mb-1">{r.title}</h4>
+                    <p className="text-xs text-gray-400 mb-1"><span className="text-gray-600">Why:</span> {r.why}</p>
+                    <p className="text-xs text-arc-accent mb-1"><span className="text-gray-600">How:</span> {r.how}</p>
+                    <p className="text-[10px] text-gray-600 uppercase">{r.arc_feature}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {strategy.migration_roadmap?.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-arc-border">
+              <div className="text-[10px] text-gray-500 uppercase mb-2">📅 Migration roadmap</div>
+              <ol className="text-xs text-gray-300 space-y-1">
+                {strategy.migration_roadmap.map((step: string, i: number) => (
+                  <li key={i}>• {step}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+          <div className="mt-3 text-[10px] text-gray-500">
+            Effort: <span className="text-arc-warning uppercase">{strategy.estimated_effort}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Tech report (if contract was analyzed) */}
+      {tech && tech.suggestions?.length > 0 && (
+        <div className="glass-card p-6">
+          <div className="text-[10px] text-gray-500 uppercase mb-3">⛓️ Tech Agent · {tech.suggestions.length} suggestions</div>
+          <p className="text-sm text-gray-300 mb-4">{tech.project_summary}</p>
+          <div className="space-y-2">
+            {tech.suggestions.slice(0, 5).map((s: any, i: number) => (
+              <div key={i} className="text-xs border border-arc-border rounded p-3">
+                <div className="font-bold text-white">{s.title}</div>
+                <div className="text-arc-accent">→ {s.fix}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* On-chain card */}
+      {onchain && (
+        <div className="glass-card p-4 text-xs text-gray-400">
+          <div className="text-[10px] uppercase text-gray-500 mb-2">📡 On-chain footprint</div>
+          <div className="font-mono break-all text-[10px] mb-2">{onchain.address}</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>Bytecode: {onchain.bytecodeSize} bytes</div>
+            <div>Tx count: {onchain.txCount}</div>
+            <div>Balance: {onchain.balance}</div>
+            <div>Quantum exposed: {onchain.exposedPublicKey ? "⚠️ yes" : "✅ no"}</div>
+          </div>
+        </div>
+      )}
+
       {/* Pay CTA */}
-      <div className="glass-card p-8 text-center bg-gradient-to-br from-arc-quantum/10 to-arc-accent/10 border-arc-accent/30">
-        <h3 className="font-bold text-xl mb-2">Want a senior-level deep audit?</h3>
-        <p className="text-sm text-gray-400 mb-5 max-w-md mx-auto">
-          Unlock code-level recommendations, security findings, and a custom quantum migration script — paid in 0.10 USDC on Arc Testnet.
-        </p>
-        <button onClick={onPay} className="glow-button">
-          💳 Pay with AgentCard · 0.10 USDC
-        </button>
-        <p className="text-[10px] text-gray-600 mt-3">
-          Sub-second finality · Powered by Circle USDC · No gas tokens needed
-        </p>
+      <div className="glass-card p-6 text-center bg-gradient-to-br from-arc-quantum/10 to-arc-accent/10">
+        <h3 className="font-bold text-lg mb-2">Want code-level deep audit?</h3>
+        <p className="text-sm text-gray-400 mb-4">Unlock vision agent (reads screenshots), security findings, custom migration script — 0.10 USDC.</p>
+        <button onClick={onPay} className="glow-button">💳 Pay with AgentCard</button>
       </div>
     </div>
   );
