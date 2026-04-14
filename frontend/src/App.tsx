@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import WalletButton from "./components/WalletButton";
+import QuantumLogo from "./components/QuantumLogo";
 import { scanContract, listProjects, type OrchestratedReport, type ProjectListItem } from "./lib/api";
 
-const RAILWAY_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 const EXAMPLE_INPUTS = [
   "0x49eD6af7c1C9dc24d4eA9Cb5D80132E46d2b2F2A",
   "https://github.com/Aabis5004/quantumguard-agents",
@@ -118,7 +119,7 @@ export default function App() {
       {!report && <HowItWorks />}
 
       {/* Recent scans */}
-      {projects.length > 0 && (
+      {projects.length > 999 && (
         <section className="max-w-5xl mx-auto px-6 pb-20">
           <div className="flex items-baseline justify-between mb-4">
             <h3 className="text-sm uppercase tracking-wider text-gray-400">Recent public scans</h3>
@@ -164,32 +165,6 @@ function Header() {
         </div>
       </div>
     </header>
-  );
-}
-
-function QuantumLogo() {
-  return (
-    <div className="relative w-10 h-10">
-      <svg viewBox="0 0 40 40" className="w-10 h-10">
-        <defs>
-          <linearGradient id="qg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#00d4ff" />
-            <stop offset="100%" stopColor="#a855f7" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M20 3 L34 9 V21 C34 28 28 33.5 20 37 C12 33.5 6 28 6 21 V9 Z"
-          fill="url(#qg-grad)"
-          opacity="0.18"
-          stroke="url(#qg-grad)"
-          strokeWidth="1.5"
-        />
-        <text x="20" y="26" textAnchor="middle" fontSize="16" fontWeight="800" fill="url(#qg-grad)" fontFamily="system-ui">
-          Q
-        </text>
-      </svg>
-      <div className="absolute inset-0 rounded-lg bg-arc-quantum/20 blur-xl -z-10"></div>
-    </div>
   );
 }
 
@@ -458,34 +433,13 @@ function AgentCardModal({ onClose }: { onClose: () => void }) {
 function Footer() {
   return (
     <footer className="border-t border-arc-border/60 mt-10">
-      <div className="max-w-6xl mx-auto px-6 py-8 grid md:grid-cols-3 gap-6 text-xs">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <QuantumLogo />
-            <span className="font-bold">QuantumGuard</span>
-          </div>
-          <p className="text-gray-500">AI-powered auditor for the Agentic Economy on Arc.</p>
+      <div className="max-w-6xl mx-auto px-6 py-6 text-center text-[10px] text-gray-600">
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <QuantumLogo />
+          <span className="font-bold text-gray-400">QuantumGuard</span>
         </div>
-        <div>
-          <div className="text-gray-500 uppercase mb-2">Live infrastructure</div>
-          <ul className="space-y-1 text-gray-400">
-            <li>📡 <a href={`${RAILWAY_URL}/api/health`} target="_blank" rel="noreferrer" className="hover:text-arc-accent">API health</a></li>
-            <li>📜 <a href="https://testnet.arcscan.app/address/0x49eD6af7c1C9dc24d4eA9Cb5D80132E46d2b2F2A" target="_blank" rel="noreferrer" className="hover:text-arc-accent">Contract on Arcscan</a></li>
-            <li>✅ <a href="https://repo.sourcify.dev/5042002/0x49eD6af7c1C9dc24d4eA9Cb5D80132E46d2b2F2A" target="_blank" rel="noreferrer" className="hover:text-arc-accent">Verified source</a></li>
-          </ul>
-        </div>
-        <div>
-          <div className="text-gray-500 uppercase mb-2">Built with</div>
-          <ul className="space-y-1 text-gray-400">
-            <li>⚡ Arc Testnet (Chain 5042002)</li>
-            <li>💵 USDC as gas</li>
-            <li>🧠 Google Gemini</li>
-            <li>📦 React + Vite + Tailwind</li>
-          </ul>
-        </div>
-      </div>
-      <div className="border-t border-arc-border/60 py-4 text-center text-[10px] text-gray-600">
-        Built for the Agentic Economy on Arc Hackathon · April 2026 · QuantumGuard is an independent project, not affiliated with or endorsed by Circle.
+        <p>AI-powered project auditor for the Arc Testnet community.</p>
+        <p className="mt-2">QuantumGuard is an independent project, not affiliated with or endorsed by Circle.</p>
       </div>
     </footer>
   );
