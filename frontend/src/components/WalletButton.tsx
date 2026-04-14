@@ -1,11 +1,24 @@
 import { useAccount, useConnect, useSwitchChain } from "wagmi";
-import { Link } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { arcTestnet } from "../lib/web3";
 
 export default function WalletButton() {
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { switchChain } = useSwitchChain();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  function goToWallet() {
+    if (location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => {
+        document.getElementById("wallet")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    } else {
+      document.getElementById("wallet")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
 
   if (!isConnected) {
     const injected = connectors.find((c) => c.id === "injected") || connectors[0];
@@ -27,11 +40,11 @@ export default function WalletButton() {
   }
 
   return (
-    <Link to="/wallet"
+    <button onClick={goToWallet}
       className="group text-xs px-4 py-2 rounded-lg bg-bg-elev border border-line hover:border-brand-1/50 transition font-mono flex items-center gap-2">
       <span className="w-1.5 h-1.5 rounded-full bg-ok"></span>
       <span className="text-ink">{address!.slice(0, 6)}…{address!.slice(-4)}</span>
-      <span className="text-ink-dim group-hover:text-brand-1 transition">→</span>
-    </Link>
+      <span className="text-ink-dim group-hover:text-brand-1 transition">↓</span>
+    </button>
   );
 }

@@ -3,7 +3,6 @@ import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import WalletButton from "./components/WalletButton";
 import QuantumLogo from "./components/QuantumLogo";
 import AgentCardPanel from "./components/AgentCardPanel";
-import { scanProject } from "./lib/api";
 
 export default function App() {
   return (
@@ -11,7 +10,6 @@ export default function App() {
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/wallet" element={<WalletPage />} />
         <Route path="/report" element={<ReportPage />} />
       </Routes>
       <Footer />
@@ -52,7 +50,14 @@ function HomePage() {
     if (!input.trim()) return;
     setLoading(true); setError(null);
     try {
-      const r = await scanProject(input.trim());
+      const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:3000";
+      const res = await fetch(`${API}/api/scan-deep`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: input.trim() }),
+      });
+      if (!res.ok) throw new Error(`Scan failed (${res.status})`);
+      const r = await res.json();
       sessionStorage.setItem("lastReport", JSON.stringify(r));
       navigate("/report");
     } catch (e: any) {
@@ -109,19 +114,17 @@ function HomePage() {
           ))}
         </div>
       </section>
-    </main>
-  );
-}
-
-function WalletPage() {
-  return (
-    <main className="max-w-3xl mx-auto px-6 py-16">
-      <Link to="/" className="text-xs text-ink-muted hover:text-brand-1 transition mb-8 inline-flex items-center gap-2">← Back home</Link>
-      <h1 className="text-4xl font-bold tracking-tight mb-3">Your AgentCard</h1>
-      <p className="text-ink-muted text-sm mb-10 max-w-md">
-        Non-custodial USDC vault on Arc Testnet. Send and receive by wallet address or card number.
-      </p>
-      <AgentCardPanel />
+    
+      <section id="wallet" className="border-t border-line/60 bg-bg-soft">
+        <div className="max-w-3xl mx-auto px-6 py-20">
+          <div className="text-[11px] tracking-widest text-ink-dim uppercase text-center mb-4">Your AgentCard</div>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-center mb-3">Non-custodial USDC vault</h2>
+          <p className="text-ink-muted text-sm text-center mb-10 max-w-md mx-auto">
+            Send and receive by wallet address or 16-digit card number. On-chain on Arc Testnet. No custodian.
+          </p>
+          <AgentCardPanel />
+        </div>
+      </section>
     </main>
   );
 }
@@ -136,7 +139,7 @@ function ReportPage() {
       </main>
     );
   }
-  const product = report?.report?.product;
+  const product = report?.report?.product || report?.product;
   return (
     <main className="max-w-3xl mx-auto px-6 py-16">
       <Link to="/" className="text-xs text-ink-muted hover:text-brand-1 transition mb-8 inline-flex items-center gap-2">← Scan another</Link>
