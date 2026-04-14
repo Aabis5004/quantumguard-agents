@@ -5,71 +5,88 @@ export interface ProductAnalysis {
   project_name: string;
   one_liner: string;
   category: "defi" | "payments" | "infra" | "wallet" | "tooling" | "social" | "gaming" | "rwa" | "other";
-  what_they_are_building: string;     // section 1: rich paragraph
-  what_they_did_great: string[];      // section 2: 3-5 bullets
-  improvements_for_arc: Array<{ title: string; what: string; arc_feature: string }>; // section 3: 3-5 specific Arc improvements
+  what_they_are_building: string;
+  what_they_did_great: Array<{ observation: string; evidence: string }>;
+  improvements_for_arc: Array<{ title: string; evidence_from_site: string; specific_change: string; arc_feature: string }>;
   arc_fit_score: number;
   notes: string;
 }
 
-const SYSTEM_PROMPT = `You are a senior Arc engineer at Circle. You review projects in the Arc Testnet community and give them clear, actionable feedback. You ONLY discuss things related to Arc and Circle infrastructure (USDC as native gas, EURC, USYC, sub-second finality, opt-in privacy, ML-DSA/Falcon post-quantum signatures, CCTP V2, Gateway, Circle Wallets, StableFX, Permit2, Multicall3). You ignore generic Web3 advice. Return ONLY strict JSON, no markdown fences.`;
+const SYSTEM_PROMPT = `You are a senior Arc engineer at Circle reviewing a specific project. You MUST ground every statement in actual content you saw. Generic advice is forbidden. Every "what they did great" must quote evidence from the content. Every "improvement" must cite a specific thing in their project that needs the change. If you cannot cite evidence, say "Insufficient content to analyze this". Return ONLY strict JSON, no markdown fences.`;
+
+function extractJson(raw: string): any {
+  const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
+  const first = cleaned.indexOf("{");
+  const last = cleaned.lastIndexOf("}");
+  if (first === -1 || last === -1 || last < first) throw new Error("No JSON object in response");
+  return JSON.parse(cleaned.slice(first, last + 1));
+}
 
 export async function runProductAgent(crawled: CrawledData): Promise<ProductAnalysis> {
   if (!crawled.bodyText && !crawled.title && !crawled.description) {
     return defaultEmpty(crawled.error);
   }
 
-  const userInput = `Project to review for the Arc Testnet community.
+  const userInput = `Project under review. READ ALL THIS CONTENT CAREFULLY:
 
 URL: ${crawled.url}
 Title: ${crawled.title || "(none)"}
-Meta description: ${crawled.description || "(none)"}
 Pages crawled: ${crawled.pagesCrawled.join(", ")}
-Tech keywords found: ${crawled.techHints.join(", ") || "none"}
-Contract addresses found: ${crawled.foundAddresses.length}
+Tech keywords actually found in content: ${crawled.techHints.join(", ") || "none"}
 
-Combined content from all crawled pages:
-${crawled.bodyText}
+=== FULL CONTENT START ===
+${crawled.bodyText.slice(0, 10000)}
+=== FULL CONTENT END ===
 
-Analyze ALL of the above content carefully. Then return ONLY this JSON. Be specific and reference details from the actual content you read. Every "improvement" must mention a real Arc feature by name.
+Now analyze THIS SPECIFIC PROJECT. Every bullet must reference specific things you saw above. No generic Arc advice that could apply to any project.
 
+Return ONLY this JSON:
 {
-  "project_name": "string (use real name from content)",
-  "one_liner": "under 15 words, what they actually built",
+  "project_name": "exact name from content",
+  "one_liner": "under 15 words, specific to what THEY built",
   "category": "defi|payments|infra|wallet|tooling|social|gaming|rwa|other",
-  "what_they_are_building": "3-5 sentences. Be specific. Reference actual features, sections, or pages you saw. Don't be generic.",
+  "what_they_are_building": "3-5 sentences. Mention at least 3 specific features, pages, or terms from the content above. If they have a 'How it works' section, describe what it says. If they list specific chains, name them.",
   "what_they_did_great": [
-    "Specific thing they did well (under 25 words). Reference what you actually saw.",
-    "Another specific positive observation",
-    "Another specific positive observation",
-    "Another specific positive observation"
+    { "observation": "Short positive observation", "evidence": "Quote or paraphrase the exact thing from the content that shows this" },
+    { "observation": "...", "evidence": "..." },
+    { "observation": "...", "evidence": "..." }
   ],
   "improvements_for_arc": [
-    { "title": "Short improvement title", "what": "Concrete change in 1-2 sentences", "arc_feature": "Exact Arc feature name" },
-    { "title": "...", "what": "...", "arc_feature": "..." },
-    { "title": "...", "what": "...", "arc_feature": "..." }
+    {
+      "title": "Improvement title tied to THEIR product",
+      "evidence_from_site": "The specific feature/phrase/page from their content that this improvement addresses",
+      "specific_change": "What exactly they should change in their product. Reference their own terminology.",
+      "arc_feature": "Arc feature name (USDC as native gas, CCTP V2, Gateway, Circle Wallets, StableFX, Permit2, Multicall3, ML-DSA post-quantum signatures, opt-in privacy, EURC, USYC, sub-second finality)"
+    },
+    { "title": "...", "evidence_from_site": "...", "specific_change": "...", "arc_feature": "..." },
+    { "title": "...", "evidence_from_site": "...", "specific_change": "...", "arc_feature": "..." }
   ],
   "arc_fit_score": 0-100,
   "notes": "one short sentence"
 }
 
-Rules:
-- "what_they_are_building" must show you actually READ the content. Mention real features, real terminology from the project.
-- "what_they_did_great" must be specific to what you saw, NOT generic ("great UI", "good docs" is too generic — say WHICH part).
-- "improvements_for_arc" must each name an Arc feature. NO generic Web3 advice. NO "use multi-sig" without tying to Arc.
-- Output ONLY the JSON. No markdown fences. No commentary.`;
+CRITICAL RULES:
+1. If you write "they should use USDC as native gas" — WHY does this project specifically need it? Quote their content.
+2. If you write "consider CCTP V2" — WHICH cross-chain feature in their product needs it? Point to it.
+3. Every "what_they_did_great" entry MUST have evidence quoting or paraphrasing the content.
+4. Every "improvements_for_arc" entry MUST cite evidence_from_site referencing something in THIS project.
+5. No boilerplate. No generic stablecoin advice. Ground everything in what you read.`;
 
-  try {
-    const raw = await callGemini(SYSTEM_PROMPT, userInput);
-    const cleaned = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
-    const parsed = JSON.parse(cleaned) as ProductAnalysis;
-    parsed.what_they_did_great = parsed.what_they_did_great || [];
-    parsed.improvements_for_arc = parsed.improvements_for_arc || [];
-    return parsed;
-  } catch (err: any) {
-    console.error("ProductAgent failed:", err.message);
-    return defaultEmpty(err.message);
+  let lastError = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const raw = await callGemini(SYSTEM_PROMPT, userInput);
+      const parsed = extractJson(raw) as ProductAnalysis;
+      parsed.what_they_did_great = parsed.what_they_did_great || [];
+      parsed.improvements_for_arc = parsed.improvements_for_arc || [];
+      if (!parsed.project_name) parsed.project_name = "Unknown";
+      return parsed;
+    } catch (err: any) {
+      lastError = err.message;
+      console.error(`ProductAgent attempt ${attempt + 1} failed:`, err.message);
+    }
   }
+  return defaultEmpty(lastError);
 }
 
 function defaultEmpty(reason?: string): ProductAnalysis {
@@ -77,7 +94,7 @@ function defaultEmpty(reason?: string): ProductAnalysis {
     project_name: "Unknown",
     one_liner: "Could not analyze",
     category: "other",
-    what_they_are_building: "Insufficient data — the crawler could not fetch usable content from this URL.",
+    what_they_are_building: "Insufficient data — the AI could not produce a clean analysis.",
     what_they_did_great: [],
     improvements_for_arc: [],
     arc_fit_score: 0,

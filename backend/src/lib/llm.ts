@@ -60,7 +60,7 @@ async function callGoogleGemma(model: string, system: string, user: string): Pro
     contents: [{
       role: "user",
       parts: [{
-        text: `${system}\n\n=== INPUT ===\n${user}\n\nReturn ONLY a valid JSON object. No markdown fences. No commentary.`
+        text: `CRITICAL INSTRUCTION: Your entire response must be a single valid JSON object. The very first character of your response MUST be the opening brace { and the very last character MUST be the closing brace }. Do not write any prose, role-play, explanation, greeting, or markdown fences. Just the raw JSON object.\n\n${system}\n\n=== INPUT ===\n${user}\n\nRemember: respond with ONLY the JSON object. Start with { and end with }.`
       }]
     }],
   };
@@ -124,55 +124,22 @@ async function callOpenRouter(model: string, system: string, user: string): Prom
 // The fallback chain (top to bottom)
 // ────────────────────────────────────────────────
 const MODEL_CHAIN: LLMProvider[] = [
-  // Google Gemini (your existing key)
-  {
-    name: "google/gemini-2.5-flash-lite",
-    model: "gemini-2.5-flash-lite",
-    call: (s, u) => callGoogleGenAI("gemini-2.5-flash-lite", s, u),
-  },
-  {
-    name: "google/gemini-2.5-flash",
-    model: "gemini-2.5-flash",
-    call: (s, u) => callGoogleGenAI("gemini-2.5-flash", s, u),
-  },
-    // Google Gemma 4 (released April 2026, top open model - same key, separate quota)
-  {
-    name: "google/gemma-4-31b-it",
-    model: "gemma-4-31b-it",
-    call: (s, u) => callGoogleGemma("gemma-4-31b-it", s, u),
-  },
-  {
-    name: "google/gemma-4-26b-it",
-    model: "gemma-4-26b-it",
-    call: (s, u) => callGoogleGemma("gemma-4-26b-it", s, u),
-  },
-  // Google Gemma 3 (older, still free, separate quota)
-  {
-    name: "google/gemma-3-27b-it",
-    model: "gemma-3-27b-it",
-    call: (s, u) => callGoogleGemma("gemma-3-27b-it", s, u),
-  },
-  // OpenRouter (free models)
-  {
-    name: "openrouter/google/gemma-3-27b-it:free",
-    model: "google/gemma-3-27b-it:free",
-    call: (s, u) => callOpenRouter("google/gemma-3-27b-it:free", s, u),
-  },
-  {
-    name: "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-    model: "meta-llama/llama-3.3-70b-instruct:free",
-    call: (s, u) => callOpenRouter("meta-llama/llama-3.3-70b-instruct:free", s, u),
-  },
-  {
-    name: "openrouter/qwen/qwen-2.5-72b-instruct:free",
-    model: "qwen/qwen-2.5-72b-instruct:free",
-    call: (s, u) => callOpenRouter("qwen/qwen-2.5-72b-instruct:free", s, u),
-  },
-  {
-    name: "openrouter/mistralai/mistral-small-3.1-24b-instruct:free",
-    model: "mistralai/mistral-small-3.1-24b-instruct:free",
-    call: (s, u) => callOpenRouter("mistralai/mistral-small-3.1-24b-instruct:free", s, u),
-  },
+  // Google Gemini direct (best at JSON, your existing key)
+  { name: 'google/gemini-2.5-flash-lite', model: 'gemini-2.5-flash-lite',
+    call: (s, u) => callGoogleGenAI('gemini-2.5-flash-lite', s, u) },
+  { name: 'google/gemini-2.5-flash', model: 'gemini-2.5-flash',
+    call: (s, u) => callGoogleGenAI('gemini-2.5-flash', s, u) },
+  // OpenRouter free models (separate quota pool from Google direct)
+  { name: 'openrouter/google/gemma-4-31b-it:free', model: 'google/gemma-4-31b-it:free',
+    call: (s, u) => callOpenRouter('google/gemma-4-31b-it:free', s, u) },
+  { name: 'openrouter/google/gemma-4-26b-a4b-it:free', model: 'google/gemma-4-26b-a4b-it:free',
+    call: (s, u) => callOpenRouter('google/gemma-4-26b-a4b-it:free', s, u) },
+  { name: 'openrouter/meta-llama/llama-3.3-70b-instruct:free', model: 'meta-llama/llama-3.3-70b-instruct:free',
+    call: (s, u) => callOpenRouter('meta-llama/llama-3.3-70b-instruct:free', s, u) },
+  { name: 'openrouter/openai/gpt-oss-120b:free', model: 'openai/gpt-oss-120b:free',
+    call: (s, u) => callOpenRouter('openai/gpt-oss-120b:free', s, u) },
+  { name: 'openrouter/google/gemma-3-27b-it:free', model: 'google/gemma-3-27b-it:free',
+    call: (s, u) => callOpenRouter('google/gemma-3-27b-it:free', s, u) },
 ];
 
 // Errors that should trigger a fallback to the next provider
@@ -205,6 +172,12 @@ export async function callLLM(systemPrompt: string, userInput: string): Promise<
     try {
       console.log(`   🤖 Trying ${provider.name}...`);
       const text = await provider.call(systemPrompt, userInput);
+      // Sanity check: response must contain a JSON object structure
+      if (!text.includes('{') || !text.includes('}')) {
+        console.log(`   ⚠️  ${provider.name} returned non-JSON text — treating as failure`);
+        errors.push(`${provider.name}: response was not JSON`);
+        continue;
+      }
       console.log(`   ✅ ${provider.name} answered`);
       return { text, providerUsed: provider.name };
     } catch (err: any) {

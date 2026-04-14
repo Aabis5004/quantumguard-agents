@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import WalletButton from "./components/WalletButton";
 import { scanContract, listProjects, type OrchestratedReport, type ProjectListItem } from "./lib/api";
 
 const RAILWAY_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -154,9 +155,12 @@ function Header() {
             </p>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-2 text-xs text-gray-400">
-          <span className="w-2 h-2 rounded-full bg-arc-success animate-pulse"></span>
-          Arc Testnet · Chain 5042002
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 text-xs text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-arc-success animate-pulse"></span>
+            Arc Testnet · Chain 5042002
+          </div>
+          <WalletButton />
         </div>
       </div>
     </header>

@@ -5,8 +5,8 @@ export interface ProductAnalysis {
   one_liner: string;
   category: string;
   what_they_are_building: string;
-  what_they_did_great: string[];
-  improvements_for_arc: Array<{ title: string; what: string; arc_feature: string }>;
+  what_they_did_great: Array<{ observation: string; evidence: string }>;
+  improvements_for_arc: Array<{ title: string; evidence_from_site: string; specific_change: string; arc_feature: string }>;
   arc_fit_score: number;
   notes: string;
 }
