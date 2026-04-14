@@ -3,9 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --background: 10 10 12;
+    --card: 20 15 35;
+    --primary: 160 80 255;
+    --accent: 0 209 255;
+    --success: 0 255 156;
+  }
+
   body {
-    @apply bg-bg text-ink antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    @apply bg-[#08080C] text-white font-sans antialiased overflow-x-hidden;
+    background-image: 
+      radial-gradient(circle at 15% 50%, rgba(160, 80, 255, 0.08), transparent 25%),
+      radial-gradient(circle at 85% 30%, rgba(0, 209, 255, 0.06), transparent 25%);
   }
 }
 
@@ -21,6 +31,47 @@
   }
   .gradient-text {
     @apply bg-gradient-to-r from-brand-1 via-white to-brand-3 bg-clip-text text-transparent;
+  }
+
+  /* The Glass/Neon Card inspired by Dribbble */
+  .premium-card {
+    @apply relative overflow-hidden rounded-[32px] border border-white/5;
+    background: linear-gradient(145deg, rgba(35, 20, 55, 0.8) 0%, rgba(15, 10, 20, 0.9) 100%);
+    box-shadow: 0 20px 40px -10px rgba(120, 50, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+  }
+
+  .premium-pill {
+    @apply flex items-center gap-2 rounded-full px-5 py-3 border border-white/5 text-sm font-medium transition-all;
+    background: linear-gradient(145deg, rgba(30, 20, 40, 0.6) 0%, rgba(10, 10, 15, 0.8) 100%);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .premium-pill:hover {
+    @apply border-purple-500/30;
+    box-shadow: 0 10px 25px -5px rgba(160, 80, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .dash-arc {
+    width: 100%;
+    height: 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  .dash-arc::before {
+    content: '';
+    position: absolute;
+    top: 50px;
+    left: 10%;
+    right: 10%;
+    height: 200px;
+    border-radius: 50%;
+    border: 1.5px dashed rgba(255, 255, 255, 0.15);
+  }
+  
+  .glow-text {
+    text-shadow: 0 0 15px rgba(160, 80, 255, 0.6);
   }
 }
 

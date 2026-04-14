@@ -69,31 +69,47 @@ function HomePage() {
 
   return (
     <main>
-      <section className="max-w-4xl mx-auto px-6 pt-24 pb-20 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-line text-[11px] text-ink-muted mb-8">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-1"></span>
-          Built for the Agentic Economy on Arc
-        </div>
-        <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.05] mb-6">
-          Audit any Arc project<br />
-          <span className="text-ink-muted">in seconds.</span>
+      <section className="relative w-full max-w-5xl mx-auto pt-24 pb-16 px-6 text-center">
+        {/* Background radial glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
+
+        {/* Main heading */}
+        <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6">
+          Audit Arc with <br/>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A050FF] to-[#00D1FF] glow-text">
+            Quantum Precision
+          </span>
         </h1>
-        <p className="text-lg text-ink-muted max-w-xl mx-auto mb-10 leading-relaxed">
-          Paste a contract, URL, or GitHub repo. Our AI agents read the on-chain footprint and tell you exactly how to use Arc's stablecoin rails, post-quantum signatures, and Circle infrastructure.
+
+        <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 font-light">
+          Autonomous AI agents that scan Arc Testnet, audit live projects, and provide concrete, post-quantum migration specs.
         </p>
-        <div className="bg-bg-elev border border-line rounded-2xl p-2 flex gap-2 max-w-2xl mx-auto shadow-soft">
-          <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleScan()}
-            className="flex-1 bg-transparent px-4 py-3 text-sm placeholder-ink-dim focus:outline-none"
-            placeholder="0x... or https://yourproject.com" />
-          <button onClick={handleScan} disabled={loading || !input.trim()}
-            className="px-6 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-ink transition disabled:opacity-40">
-            {loading ? "Scanning…" : "Scan with AI"}
-          </button>
+
+        {/* The Command Input (Search Bar) */}
+        <div className="relative max-w-3xl mx-auto group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-[#A050FF] to-[#00D1FF] rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+          <div className="relative flex items-center bg-[#100A1A] border border-white/10 rounded-2xl p-2 shadow-2xl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="m-4 text-purple-400" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            <input 
+              type="text" value={input} onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleScan()}
+              placeholder="Enter Arc Contract Address (e.g. 0x49eD...)"
+              className="w-full bg-transparent border-none text-white text-lg placeholder-gray-600 focus:outline-none focus:ring-0 px-2"
+            />
+            <button onClick={handleScan} disabled={loading || !input.trim()} className="flex items-center gap-2 bg-white text-black px-8 py-4 rounded-xl font-semibold hover:bg-gray-200 transition-colors disabled:opacity-40">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path><path d="m9 12 2 2 4-4"></path></svg>
+              {loading ? "Scanning…" : "Scan"}
+            </button>
+          </div>
         </div>
-        {error && <div className="mt-4 text-sm text-bad">{error}</div>}
-        <div className="mt-6 text-[11px] text-ink-dim">
-          Try: <button onClick={() => setInput("https://docs.arc.network")} className="hover:text-brand-1">docs.arc.network</button>
+        {error && <div className="mt-4 text-sm text-red-500">{error}</div>}
+
+        {/* Quick suggestions area */}
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <span className="text-sm text-gray-500 mr-2 self-center">Try scanning:</span>
+          <button onClick={() => setInput("https://docs.arc.network")} className="px-4 py-2 rounded-full border border-white/5 bg-white/5 text-sm text-purple-300 hover:bg-purple-500/10 hover:border-purple-500/30 transition-all">
+            docs.arc.network
+          </button>
         </div>
       </section>
 
